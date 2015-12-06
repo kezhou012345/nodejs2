@@ -1,0 +1,153 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+      <link href="stylesheets/bootstrap.css" rel="stylesheet" />
+      <link href="stylesheets/font-awesome.css" rel="stylesheet" />
+      <link href="stylesheets/style.css" rel="stylesheet" />
+  </head>
+  <body>
+  
+      <div class="container">
+          <div class="row pad-top pad-bottom">
+              <div class=" col-lg-6 col-md-6 col-sm-6">
+                  <div class="chat-box-div">
+                      <div class="chat-box-head">
+                           GROUP CHAT <div class="little-button btn-group pull-right">
+    <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+        <span class="fa fa-cogs"></span>
+        <span class="sr-only">Toggle Dropdown</span>
+    </button>
+    <ul class="dropdown-menu" role="menu">
+        <li><a href="#" id="logout"><span class="fa fa-circle-o-notch"></span>&nbsp;Logout</a></li>
+    </ul>
+</div>
+                      </div>
+                      <div id="messages" class="panel-body chat-box-main">
+
+
+                      </div>
+                      
+                          <div class="chat-box-footer">
+                              <form action="">
+                                  <div class="input-group">
+                                      <input id="m" type="text" class="form-control" placeholder="Enter Text Here..." required/>
+                                      <span class="input-group-btn">
+                                          <button class="btn btn-info">Send</button>
+                                      </span>
+                                  </div>
+
+                              </form>
+                   </div>
+                  </div>
+
+              </div>
+              <div class="col-lg-3 col-md-3 col-sm-3">
+                  <div class="chat-box-new-div">
+                      <div class="chat-box-new-head">
+                          NEW CHATS
+                      </div>
+                      <div id="users" class="panel-body chat-box-new">
+
+
+                      </div>
+
+                  </div>
+
+              </div>
+
+
+
+
+
+              </div>
+          </div>
+        
+
+
+
+
+
+
+          <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+          <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+          <script src="javascripts/bootstrap.js"></script>
+          <script>
+              console.log(sessionStorage.getItem('start'));
+              console.log(sessionStorage.getItem('name'));
+              if (!sessionStorage.getItem('name')) {
+                  window.location = "/users";
+              }
+              else {
+
+                  var tabel = ['chat-box-left', 'chat-box-right'];
+                  var tabel2 = ['chat-box-name-left', 'chat-box-name-right'];
+                  var index = 0;
+                  var socket = io();
+                  var name = sessionStorage.getItem('name');
+                  var fotoid = sessionStorage.getItem('fotoid');
+                  if (!sessionStorage.getItem('start')) {
+                      console.log("aaaaaaaaaaaaaaaaaaa");
+                      socket.emit('login', { 'name': name, 'fotoid': fotoid });
+                      sessionStorage.setItem('start', 'true');
+                  }
+
+                  console.log(name);
+                  console.log(fotoid);
+                  socket.emit('init', { 'name': name, 'fotoid': fotoid });
+                  socket.on('init', function (msg) {
+                      console.log(msg);
+                      $('#users').empty();
+                      var list = JSON.parse(msg);
+                      list.forEach(function (data) {
+                          $('#users').append($('<img width="75px" heigt="75px" src="' + data.fotoid + '" alt="bootstrap Chat box user image" class="img-circle" />'));
+                          $('#users').append(data.name);
+                          $('#users').append('<hr class="hr-clas-low" />');
+                      });
+                  });
+                  $('form').submit(function () {
+                      socket.emit('chat message', { 'name': name, 'fotoid': fotoid, 'message': $('#m').val() });
+                      $('#m').val('');
+                      return false;
+                  });
+                  socket.on('chat message', function (msg) {
+
+                      $('#messages').append($('<div class="' + tabel[index] + '">').text(msg.message));
+                      $('#messages').append($('<div class="' + tabel2[index] + '">').append('<img src="' + msg.fotoid + '" width="70px" heght="70px" alt="bootstrap Chat box user image" class="img-circle" />' + " -" + msg.name));
+                      $('#messages').append($('<hr class="hr-clas"/>'));
+                      if (index == 0) { index = 1; }
+                      else { index = 0; }
+                  });
+                  socket.on('login', function (msg) {
+                      console.log(msg.fotoid);
+                      $('#users').append($('<img width="75px" heigt="75px" src="' + msg.fotoid + '" alt="bootstrap Chat box user image" class="img-circle" />'));
+                      $('#users').append(msg.name);
+                      $('#users').append('<hr class="hr-clas-low" />');
+
+                  });
+                  function logout() {
+                      socket.emit('logout', { 'name': name, 'fotoid': fotoid });
+                  }
+                  socket.on('logout', function (msg) {
+                      console.log(msg);
+                      $('#users').empty();
+                      var list = JSON.parse(msg);
+                      list.forEach(function (data) {
+                          $('#users').append($('<img width="75px" heigt="75px" src="' + data.fotoid + '" alt="bootstrap Chat box user image" class="img-circle" />'));
+                          $('#users').append(data.name);
+                          $('#users').append('<hr class="hr-clas-low" />');
+                      });
+                  });
+                  $('#logout').bind('click', function () {
+                      logout();
+                      sessionStorage.removeItem('name');
+                      sessionStorage.removeItem('fotoid');
+                      $(location).attr('href', '/users');
+                      //sessionStorage.setItem('login', 'false');
+                  });
+              }
+              
+          </script>
+</body>
+</html>
